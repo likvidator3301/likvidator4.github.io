@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .divCell {
+            position:absolute;
+            width:10px;
+            height:10px;
+            border-width:1px;
+            border-style:dotted;
+            border-color:black;
+            background:white;
+        }
+        #universe {
+            position:relative;
+            margin:20px auto;
+        }
+        .buttons {
+            width: 80%;
+            margin: 0 auto;
+        }
+    </style>
+<script>
+  var DEAD = 0,
+    ALIVE = 1,
+    CELL_X_COUNT = 60,
+    CELL_Y_COUNT = 60,
+    TIMEOUT = 100,
+    interval;
+
+function createUniverse() {
+    var universe = document.getElementById('universe');
+    for(var i = 0; i < CELL_X_COUNT;i++) {
+        for(var j = 0; j < CELL_Y_COUNT;j++) {
+            var element = document.createElement('div');
+
+            element.className = 'divCell';
+            element.style.left = (i * 11) + 'px';
+            element.style.top = (j * 11) + 'px';
+            element.id = "x" + i + "y" + j;
+            element.setAttribute("state", DEAD);
+            universe.appendChild(element);
+        }
+    }
+}
+
+function cellClick(event) {
+    if(event.target.tagName == "DIV")	{
+        if(event.target.getAttribute("state") == DEAD) {
+            event.target.setAttribute("state", ALIVE);
+            event.target.style.background = document.getElementById('colorInputField').value;
+        }
+        else {
+            event.target.setAttribute("state", DEAD);
+            event.target.style.background = "white"
+        }
+
+    }
+    event.stopPropagation();
+}
+
+function getCellState(x, y)
+{
+    if( x < 0 || x > CELL_X_COUNT || y < 0 || y > CELL_Y_COUNT)	{
+        return null;
+    }
+
+    var cell = document.getElementById("x" + x + "y" + y);
+    return cell.getAttribute("state");
+}
+
+function setCellState(x, y, deadOrAlive){
+
+    if( x < 0 || x > CELL_X_COUNT || y < 0 || y > CELL_Y_COUNT)	{
+        return;
+    }
+
+    var cell = document.getElementById("x" + x + "y" + y);
+    cell.setAttribute("state", deadOrAlive);
+
+    cell.style.background =
+        deadOrAlive == DEAD ? "white" : document.getElementById('colorInputField').value;
+}
+
+function lifeStep() {
+    var newStateUniverse = [];
+    try {
+        for (var i = 0; i < CELL_X_COUNT; i++) {
+            for (var j = 0; j < CELL_Y_COUNT; j++) {
+                var countOfAliveNeighbors = getCountOfAliveNeighbors(i, j);
+                var currentState = getCellState(i, j);
+
+                if (currentState == ALIVE && countOfAliveNeighbors === 2)
+                    newStateUniverse[i + ';' + j] = 1;
+                else if (countOfAliveNeighbors === 3)
+                    newStateUniverse[i + ';' + j] = 1;
+                else
+                    newStateUniverse[i + ';' + j] = 0;
+            }
+        }
+    }catch (ex) {
+        logger.writeMessage(ex.message);
+    }
+
+    for (var coordinate in newStateUniverse) {
+        var coordinates = coordinate.split(';');
+        var x = Number(coordinates[0]);
+        var y = Number(coordinates[1]);
+
+        setCellState(x, y, newStateUniverse[coordinate]);
+    }
+}
+
+function getCountOfAliveNeighbors(x, y) {
+    var count = 0;
+    for (var i = -1; i <= 1; i++)
+        for (var j = -1; j <= 1; j++) {
+        var realX = x + i;
+        var realY = y + j;
+        if (x + i >= CELL_X_COUNT)
+            realX = 0;
+        if (x + i < 0)
+            realX = CELL_X_COUNT - 1;
+        if (y + j >= CELL_Y_COUNT)
+            realY = 0;
+        if (y + j < 0)
+            realY = CELL_Y_COUNT - 1;
+        if (!(i === 0 && j === 0) && getCellState(realX, realY) == ALIVE)
+            count++;
+        }
+    return count;
+}
+
+function startLife() {
+    interval = setInterval(lifeStep, TIMEOUT);
+}
+
+function pauseLife() {
+    clearInterval(interval);
+}
+
+function killLife() {
+    pauseLife();
+    for(var i = 0; i < CELL_X_COUNT; i++) {
+        for(var j = 0; j < CELL_Y_COUNT; j++) {
+            setCellState(i, j, DEAD);
+        }
+    }
+}
+
+</script>
+</head>
+<body onload="createUniverse();" onclick="cellClick(event)">
+<div style="margin:10px auto; width:800px;">
+    <h1>The best <i>game of life</i></h1>
+    <div state="0" class="buttons">
+        <label>Color of cells</label>
+        <input type="color" id="colorInputField"/>
+        <button onclick="startLife()">Start Life</button>
+        <button onclick="pauseLife()">Pause Life</button>
+        <button onclick="killLife()">Kill Life</button>
+        <button onclick="lifeStep()">One step</button>
+    </div>
+    <div id='universe'></div>
+</div>
+</body>
+</html>
